@@ -16,7 +16,7 @@
 ## 当前状态
 
 - 阶段：独立迁移工具首版已实现并完成本地无数据库验收，等待真实隔离 SQL Server 2025/2019 环境验收。
-- Git 状态：远程仓库 `hjt1314/Sql_Server_Move`，开发分支 `feature/sql-server-migration-tool`；Issue #1 已建立，Pull Request 待本次提交后创建。
+- Git 状态：远程仓库 `hjt1314/Sql_Server_Move`，开发分支 `feature/sql-server-migration-tool`；Issue #1 和 Pull Request #2 已建立，等待审阅/合并。
 - 修改授权：用户已明确确认创建独立项目，并确认加入可自由切换的性能模式。
 
 ## 历史变更记录（仅追加）
@@ -71,3 +71,9 @@
 - `final3` EXE：154,194,189 字节，SHA-256 `E47F263DF8A375DDB1CBEC78DCB398DAFF58C6360C064B194D18086C80AABEB7`。
 - `final3` ZIP：65,451,579 字节，SHA-256 `A129564562810DB595C8CCEDD3896840666C979C7EA88C6CEC2F7D2CB34AAB9A`。
 - `final3` EXE 隐藏启动 3 秒后仍正常存活；仅停止本次自行启动的测试进程。未连接或写入 SQL Server。
+
+### 2026-10-23 11:46 +08:00
+
+- Git 交付：提交 `3023805`（`[feat] SqlServerMigration - 实现 SQL Server 逻辑迁移工具`）已推送到 `origin/feature/sql-server-migration-tool`。
+- Pull Request：`#2`（`https://github.com/hjt1314/Sql_Server_Move/pull/2`），关联并关闭 Issue `#1`；PR 描述已包含完成内容、测试结果、已知风险和下一步计划。
+- 当前状态：代码已提交并进入评审；本次未合并 PR，未部署到服务器，未执行真实数据库迁移。
