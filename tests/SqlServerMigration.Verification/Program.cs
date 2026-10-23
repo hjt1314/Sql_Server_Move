@@ -1,4 +1,5 @@
 using System.Windows.Interop;
+using System.Windows.Threading;
 using SqlServerMigration.App;
 using SqlServerMigration.App.Models;
 using SqlServerMigration.App.Services;
@@ -15,7 +16,7 @@ var checks = new List<(string Name, Func<Task> Run)>
     ("连接信息脱敏", VerifyConnectionRedactionAsync),
     ("迁移计划指纹", VerifyPlanFingerprintAsync),
     ("校验警告语义", VerifyValidationWarningAsync),
-    ("WPF 主窗口构造", VerifyWindowCompositionAsync),
+    ("WPF 主窗口显示", VerifyWindowCompositionAsync),
     ("界面默认低影响模式", VerifyViewModelDefaultAsync)
 };
 
@@ -257,24 +258,48 @@ static async Task VerifyWindowCompositionAsync()
     var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     var thread = new Thread(() =>
     {
+        MainWindow? window = null;
+        Exception? failure = null;
         try
         {
-            var window = new MainWindow(operations: null);
-            var handle = new WindowInteropHelper(window).EnsureHandle();
+            window = new MainWindow();
+            window.Show();
+            window.Dispatcher.Invoke(window.UpdateLayout, DispatcherPriority.ApplicationIdle);
+            var handle = new WindowInteropHelper(window).Handle;
             True(handle != IntPtr.Zero, "未能创建 WPF 主窗口句柄");
+            True(window.IsVisible, "WPF 主窗口未显示");
             Equal("SQL Server 2025 → 2019 数据迁移", window.Title, "主窗口标题");
             True(window.Width <= 1280 && window.Height <= 700, "主窗口尺寸超过 1366×768 验收范围");
-            window.Close();
-            completion.SetResult();
         }
         catch (Exception exception)
         {
-            completion.SetException(exception);
+            failure = exception;
+        }
+        finally
+        {
+            try
+            {
+                window?.Close();
+            }
+            catch (Exception exception)
+            {
+                failure ??= exception;
+            }
+        }
+
+        if (failure is null)
+        {
+            completion.SetResult();
+        }
+        else
+        {
+            completion.SetException(failure);
         }
     });
     thread.SetApartmentState(ApartmentState.STA);
     thread.Start();
     await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+    True(thread.Join(TimeSpan.FromSeconds(5)), "WPF 验收线程未在窗口关闭后退出");
 }
 
 static MigrationPlan CreatePlan(string targetDatabaseName) => new()

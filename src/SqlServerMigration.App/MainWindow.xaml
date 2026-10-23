@@ -268,7 +268,7 @@
                                 <StackPanel><TextBlock FontSize="11" Foreground="#64748B" Text="已迁移行" /><TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding RowsText}" /></StackPanel>
                             </UniformGrid>
                             <Grid Margin="0,9,0,0">
-                                <ProgressBar Height="8" Maximum="100" Value="{Binding OverallProgressPercent}" />
+                                <ProgressBar Height="8" Maximum="100" Value="{Binding OverallProgressPercent, Mode=OneWay}" />
                                 <TextBlock Margin="0,10,0,0" HorizontalAlignment="Right" FontSize="11" Foreground="#475569" Text="{Binding ProgressText}" />
                             </Grid>
                         </StackPanel>

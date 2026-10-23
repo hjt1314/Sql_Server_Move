@@ -15,7 +15,7 @@
 
 ## 当前状态
 
-- 阶段：独立迁移工具首版已实现并完成本地无数据库验收，等待真实隔离 SQL Server 2025/2019 环境验收。
+- 阶段：首版启动绑定缺陷已修复，`final5` 已完成真实窗口显示验收；等待隔离 SQL Server 2025/2019 环境验收。
 - Git 状态：远程仓库 `hjt1314/Sql_Server_Move`，开发分支 `feature/sql-server-migration-tool`；Issue #1 和 Pull Request #2 已建立，等待审阅/合并。
 - 修改授权：用户已明确确认创建独立项目，并确认加入可自由切换的性能模式。
 
@@ -77,3 +77,31 @@
 - Git 交付：提交 `3023805`（`[feat] SqlServerMigration - 实现 SQL Server 逻辑迁移工具`）已推送到 `origin/feature/sql-server-migration-tool`。
 - Pull Request：`#2`（`https://github.com/hjt1314/Sql_Server_Move/pull/2`），关联并关闭 Issue `#1`；PR 描述已包含完成内容、测试结果、已知风险和下一步计划。
 - 当前状态：代码已提交并进入评审；本次未合并 PR，未部署到服务器，未执行真实数据库迁移。
+
+### 2026-10-23 11:59 +08:00
+
+- 修改原因：用户报告 `final3` EXE 双击无反应。正常可见启动复现出窗口显示前崩溃；Windows `.NET Runtime` 事件 1026 确认 `OverallProgressPercent` 只读属性被 `ProgressBar.Value` 按 TwoWay/OneWayToSource 绑定，抛出 `InvalidOperationException`。
+- 修改文件：`src/SqlServerMigration.App/MainWindow.xaml`、`tests/SqlServerMigration.Verification/Program.cs`、`project.md`。
+- 修改内容：
+  - 将进度条 `OverallProgressPercent` 绑定显式设为 `Mode=OneWay`，不改变 ViewModel 对外写入边界。
+  - WPF 回归验证改用默认 `MainWindow` 构造，实际执行 `Show()`、ApplicationIdle 布局，并断言窗口句柄非零与 `IsVisible=true`，避免再次遗漏仅在显示阶段触发的异常。
+- 影响范围：仅修复主窗口启动时的进度条绑定和对应回归验证；未修改数据库连接、预检、架构生成、数据复制、性能模式或校验逻辑。
+- 验收结果：
+  - `dotnet format --verify-no-changes`：通过；隔离 Release 构建：0 警告、0 错误。
+  - 无数据库验证 11/11 通过，其中“WPF 主窗口显示”已真正显示窗口并完成布局。
+  - 最终 `final5` EXE 正常可见启动 3 秒：`WaitForInputIdle=true`，主窗口句柄 `0x80F80`，标题正确，`Responding=true`，同一时间窗内新增 .NET/Application/WER 崩溃事件 0 条；仅停止本次自行启动的测试进程。
+  - 未连接、写入或修改任何 SQL Server。
+- 交付包：
+  - `final4` 首次隔离发布因还原资产缺少 `win-x64` 目标而中止，未生成 EXE；未覆盖或删除任何旧产物。
+  - 重新显式还原 `win-x64` 后生成 `artifacts/SqlServerMigration-win-x64-final5` 和 `artifacts/SqlServerMigration-win-x64-final5.zip`；`final5` 是当前唯一应交付版本，不应继续使用 `final2`/`final3`。
+  - `final5` EXE：154,194,189 字节，SHA-256 `9EAE3A7B58DD4B86C209B0B8C51DA4A4AB9A31090617B1C0EEEE6E871790528F`。
+  - `final5` ZIP：65,451,797 字节，SHA-256 `BB94B849CB5ABF9687026C36C4E1E7B6DCEE74B17C2EC99CE909E5C6D774251F`。
+- 验证中间目录按用户的可恢复清理规则保留，未删除：`C:\Users\EDY\AppData\Local\Temp\sql-migration-startup-fix-21b52e3920b84cebac37c5fa1c803a38`、`C:\Users\EDY\AppData\Local\Temp\sql-migration-publish-fix-3345c03ed4814128a0b36d07bdec01a2`。
+
+### 2026-10-23 12:03 +08:00
+
+- 独立复核确认 `Mode=OneWay` 精准覆盖本次 Runtime 1026，全项目 XAML 未发现第二处同类只读属性默认 TwoWay 绑定。
+- 独立 A/B 验证确认：当前修复为 11/11 通过；仅恢复旧绑定时，“WPF 主窗口显示”能捕获相同只读属性异常并以失败退出，证明回归检查可防止本缺陷复发。
+- 根据复核建议，调整 `tests/SqlServerMigration.Verification/Program.cs`：窗口关闭完成后才设置验证成功，并用带超时的 `Thread.Join` 确认 STA 验收线程退出，避免先报通过再清理窗口。
+- 最后复验：`dotnet format --verify-no-changes` 通过，隔离 Release 构建 0 警告/0 错误，11/11 验证通过。该调整仅影响验证项目，应用程序及 `final5` 二进制未变化，无需重新打包。
+- 新增验证中间目录保留未删除：`C:\Users\EDY\AppData\Local\Temp\sql-migration-startup-fix-final-d39fc5091cd547f78c18a9995ea6a1b8`。
